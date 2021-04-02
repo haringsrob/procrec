@@ -33,12 +33,15 @@ use tempfile::NamedTempFile;
 #[derive(Clap)]
 #[clap(version = crate_version!(), author = crate_authors!())]
 struct Opts {
-    /// Sampling interval in seconds
-    #[clap(short = 'i', long = "interval", default_value = "2")]
+    /// Sampling interval in milliseconds
+    #[clap(short = 'i', long = "interval", default_value = "1")]
     interval: u64,
     /// Duration for observation
     #[clap(short = 'd', long = "duration")]
     duration: Option<u64>,
+    // The filename for the plot.
+    #[clap(short = 'o', long = "output")]
+    output: Option<String>,
     /// Process to be inspected. If omitted, a command to execute must be given.
     #[clap(short = 'p', long = "pid", conflicts_with = "command")]
     pid: Option<u32>,
@@ -187,7 +190,7 @@ fn delay(millis: u64) {
     let timeout = time::Duration::from_millis(millis);
     thread::sleep(timeout);
 }
-fn gnuplot_recording(recording: &[Sample]) -> io::Result<()> {
+fn gnuplot_recording(recording: &[Sample], output: Option<String>) -> io::Result<()> {
     let gnuplot_script_content = include_str!("../recording.plot");
     let mut gnuplot_file = NamedTempFile::new()?;
     gnuplot_file.write_all(gnuplot_script_content.as_bytes())?;
@@ -197,7 +200,13 @@ fn gnuplot_recording(recording: &[Sample]) -> io::Result<()> {
         data_file.write_all(format!("{}\n", i).as_bytes())?;
     }
     data_file.flush()?;
-    let fname_param = format!("filename={:?};", data_file.path().display());
+
+    let output_file = match output {
+        Some(filename) => filename,
+        None => "".to_string()
+    };
+
+    let fname_param = format!("set terminal png size 1024,1024; set output {:?}; filename={:?};", output_file, data_file.path().display());
 
     let output = Command::new("gnuplot")
         .arg("-e")
@@ -228,7 +237,7 @@ fn main() -> Result<()> {
 
     // Fetch the CPU one time set the "baseline"
     let _percent_cpu = pid_proc.cpu_percent();
-    let sample_rate = opts.interval * 1000;
+    let sample_rate = opts.interval;
 
     let mut recording = vec![];
     let mut start: Option<SystemTime> = None;
@@ -282,7 +291,7 @@ fn main() -> Result<()> {
         }
     }
     if opts.graph {
-        if let Err(err) = gnuplot_recording(&recording) {
+        if let Err(err) = gnuplot_recording(&recording, opts.output) {
             println!("Fatal error calling gnuplot: {}", err);
         }
     }
