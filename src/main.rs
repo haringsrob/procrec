@@ -208,6 +208,12 @@ fn gnuplot_recording(recording: &[Sample], output: Option<String>) -> io::Result
 
     let fname_param = format!("set terminal png size 1024,1024; set output {:?}; filename={:?};", output_file, data_file.path().display());
 
+    //let command_test = Command::new("cat")
+    //.arg(data_file.path().display().to_string())
+    //    .output();
+
+    //println!("status: {:?}", command_test);
+
     let output = Command::new("gnuplot")
         .arg("-e")
         .arg(fname_param)
