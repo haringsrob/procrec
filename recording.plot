@@ -16,7 +16,7 @@ stats filename using 5 nooutput name 'CPU_'
 set ylabel sprintf("CPU perc, MAX: %.2f", CPU_max) tc lt 1 font ",12"
 
 stats filename using 7 nooutput name 'MEM_'
-set yr[0:100]
+set yr[0:200]
 set y2label sprintf("MEM (kb), MAX %i kb", MEM_max) tc lt 20 font ",12" offset 1,0
 
 plot    filename using 1:5 title "CPU" with l lt 1 lw 2, \
